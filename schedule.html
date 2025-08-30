@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2">Расписание рабочих мест</h1>
+        <p class="lead mb-0">На {{ formatted_date }}</p>
+    </div>
+
+    <div class="d-flex">
+        <form method="GET" class="d-flex">
+            <input type="date" class="form-control me-2" name="date"
+                   value="{{ selected_date }}"
+                   min="{{ min_date }}" max="{{ max_date }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary ms-2">
+            <i class="bi bi-arrow-left me-1"></i> Назад
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Рабочее место</th>
+                        {% for hour in range(working_hours[0], working_hours[1] + 1) %}
+                            <th class="text-center">{{ hour }}:00</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for place, bookings in schedule.items() %}
+                    <tr>
+                        <td class="fw-bold">Место {{ place }}</td>
+                        {% for hour in range(working_hours[0], working_hours[1] + 1) %}
+                            {% set time_slot = hour ~ ':00' %}
+                            {% set is_booked = false %}
+                            {% set booking_user = '' %}
+
+                            {% for booking in bookings %}
+                                {% set start_hour = booking.start|split(':')[0]|int %}
+                                {% set end_hour = booking.end|split(':')[0]|int %}
+
+                                {% if hour >= start_hour and hour < end_hour %}
+                                    {% set is_booked = true %}
+                                    {% set booking_user = booking.user %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if is_booked %}
+                                <td class="text-center bg-danger-light"
+                                    data-bs-toggle="tooltip"
+                                    title="Занято: {{ booking_user }}">
+                                    <i class="bi bi-person-fill"></i>
+                                </td>
+                            {% else %}
+                                <td class="text-center bg-success-light">
+                                    <i class="bi bi-check-lg"></i>
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            <div class="d-flex align-items-center mb-2">
+                <div class="bg-success-light p-2 me-2 rounded">
+                    <i class="bi bi-check-lg"></i>
+                </div>
+                <span>Свободно</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="bg-danger-light p-2 me-2 rounded">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <span>Занято</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
