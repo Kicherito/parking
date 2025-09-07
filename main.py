@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='/root/parking/templates')
 app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
@@ -186,4 +186,4 @@ booking_system = OfficeBookingSystem()
 # ... (index, login, register, dashboard, check_availability, book, cancel, schedule, logout)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
