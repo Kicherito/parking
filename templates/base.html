@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парковка - система бронирования рабочих мест</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #2563eb;
+            --accent: #10b981;
+            --light: #f0f9ff;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            padding-top: 20px;
+            padding-bottom: 50px;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            border: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 10px 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+            border-left: 4px solid var(--primary);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(30, 58, 138, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            background: white;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .hero-section {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 20px;
+            padding: 50px 30px;
+            color: white;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 120px;
+            height: 120px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(255,255,255,0.1)'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z'/%3E%3Cpath d='M8 8h8v2H8zm0 4h8v2H8zm0 4h5v2H8z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.3;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(30, 58, 138, 0.25);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #6c757d;
+            margin-top: 50px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .workplace {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: #dbeafe;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            position: relative;
+            margin: 0 2px;
+            text-align: center;
+            line-height: 36px;
+            font-weight: 500;
+        }
+
+        .workplace.occupied {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .workplace.occupied::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 30px;
+            height: 3px;
+            background: #ef4444;
+        }
+
+        .workplace.free {
+            background: #dcfce7;
+            border-color: var(--accent);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .alert-flash {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .time-input-group {
+            display: flex;
+        }
+
+        .time-input-group .form-control {
+            border-radius: 0;
+        }
+
+        .time-input-group .form-control:first-child {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+
+        .time-input-group .form-control:last-child {
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .btn-close-white {
+            filter: invert(1) brightness(100%);
+            opacity: 0.8;
+            background-size: 0.7em;
+        }
+
+        .day-selector-btn {
+            flex: 1;
+            margin: 2px;
+        }
+
+        .flatpickr-calendar {
+            z-index: 1050 !important;
+        }
+
+        .weekdays-selector {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .selected-dates-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .date-badge {
+            margin: 3px;
+            font-size: 0.9rem;
+        }
+
+        /* Стили для статуса мест */
+        .place-available {
+            cursor: pointer;
+            background-color: #dcfce7;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .place-unavailable {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #b91c1c;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .place-unavailable::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ef4444;
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+        .place-unavailable::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ef4444;
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .status-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .status-available {
+            background-color: #dcfce7;
+            border: 1px solid #10b981;
+        }
+
+        .status-unavailable {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            position: relative;
+        }
+
+        .status-unavailable::after,
+        .status-unavailable::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ef4444;
+        }
+
+        .status-unavailable::after {
+            transform: rotate(45deg);
+        }
+
+        .status-unavailable::before {
+            transform: rotate(-45deg);
+        }
+
+        /* Новые стили для расписания */
+        .week-divider {
+            border-right: 2px solid #dee2e6 !important;
+        }
+        .month-table th, .month-table td {
+            min-width: 100px;
+        }
+        .btn-group .btn.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .table td {
+            position: relative;
+            min-width: 80px;
+            height: 40px;
+        }
+        .table td i {
+            font-size: 1.2rem;
+        }
+        .bg-success {
+            background-color: #198754 !important;
+        }
+        .bg-danger {
+            background-color: #dc3545 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-flash">
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i>
+                <div>{{ message|safe }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="container">
+        <nav class="navbar navbar-expand-lg">
+            <div class="container-fluid">
+                <a class="logo" href="/">
+                    <div class="logo-icon">
+                        <i class="bi bi-p-square"></i>
+                    </div>
+                    <div>
+                        Парковка
+                        <div class="subtitle">Система бронирования рабочих мест</div>
+                    </div>
+                </a>
+                <div class="d-flex">
+                    {% if 'username' in session %}
+                        <a href="{{ url_for('schedule') }}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-calendar-event me-1"></i> Расписание
+                        </a>
+                        <span class="me-3 d-none d-md-block">
+                            <i class="bi bi-person-circle me-1"></i> {{ session['username'] }}
+                        </span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-right"></i> Выйти
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Войти
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Регистрация
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        {% block content %}{% endblock %}
+
+        <div class="footer">
+            <p>© 2023 Система бронирования "Парковка" для сотрудников. Все права защищены.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Закрываем flash-сообщения через 5 секунд
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    new bootstrap.Alert(alert).close();
+                });
+            }, 5000);
+
+            // Инициализация времени
+            const timeInputs = document.querySelectorAll('input[type="time"]');
+            timeInputs.forEach(input => {
+                input.min = "08:00";
+                input.max = "18:00";
+                input.step = 900; // 15 минут
+            });
+
+            // Инициализация flatpickr
+            flatpickr.localize(flatpickr.l10ns.ru);
+
+            // Функция для форматирования даты в локальном формате
+            window.formatDate = function(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Инициализация календаря для выбора дат
+            const datePicker = document.getElementById('date-picker');
+            if (datePicker) {
+                const today = new Date();
+                const maxDate = new Date();
+                maxDate.setDate(today.getDate() + 30);
+
+                window.fp = flatpickr(datePicker, {
+                    mode: "multiple",
+                    dateFormat: "Y-m-d",
+                    minDate: "today",
+                    maxDate: maxDate,
+                    locale: "ru",
+                    inline: true,
+                    showMonths: 1,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        window.updateSelectedDates(selectedDates);
+                    }
+                });
+
+                // Функция для обновления отображения выбранных дат
+                window.updateSelectedDates = function(selectedDates) {
+                    const container = document.getElementById('selected-dates');
+                    container.innerHTML = '';
+
+                    selectedDates.sort((a, b) => a - b).forEach(date => {
+                        const dateStr = window.formatDate(date);
+                        const formattedDate = new Date(dateStr).toLocaleDateString('ru-RU', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short'
+                        });
+
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-primary date-badge';
+                        badge.textContent = formattedDate;
+                        container.appendChild(badge);
+                    });
+
+                    // Обновляем скрытое поле с датами
+                    document.getElementById('hidden-dates').value = selectedDates.map(d => window.formatDate(d)).join(',');
+                }
+
+                // Функция для добавления дней недели
+                function addWeekdays(dayOfWeek) {
+                    const selectedDates = window.fp.selectedDates || [];
+                    const selectedDateSet = new Set(selectedDates.map(d => d.getTime()));
+
+                    const today = new Date();
+                    const endDate = new Date();
+                    endDate.setDate(today.getDate() + 30);
+                    const currentDate = new Date(today);
+
+                    const datesToAdd = [];
+
+                    while (currentDate <= endDate) {
+                        if (currentDate.getDay() === dayOfWeek) {
+                            if (!selectedDateSet.has(currentDate.getTime())) {
+                                datesToAdd.push(new Date(currentDate));
+                                selectedDateSet.add(currentDate.getTime());
+                            }
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    // Добавляем новые даты
+                    const newSelectedDates = [...selectedDates, ...datesToAdd];
+                    window.fp.setDate(newSelectedDates);
+
+                    // Обновляем отображение
+                    window.updateSelectedDates(newSelectedDates);
+                }
+
+                // Добавление кнопок для выбора дней недели
+                document.querySelectorAll('.day-selector').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const dayOfWeek = parseInt(this.dataset.day);
+                        addWeekdays(dayOfWeek);
+                    });
+                });
+
+                // Кнопка выбора всех рабочих дней
+                document.getElementById('select-workdays').addEventListener('click', function() {
+                    const selectedDates = window.fp.selectedDates || [];
+                    const selectedDateSet = new Set(selectedDates.map(d => d.getTime()));
+
+                    const today = new Date();
+                    const endDate = new Date();
+                    endDate.setDate(today.getDate() + 30);
+                    const currentDate = new Date(today);
+
+                    const datesToAdd = [];
+
+                    while (currentDate <= endDate) {
+                        // 1-5: понедельник-пятница
+                        if (currentDate.getDay() >= 1 && currentDate.getDay() <= 5) {
+                            if (!selectedDateSet.has(currentDate.getTime())) {
+                                datesToAdd.push(new Date(currentDate));
+                                selectedDateSet.add(currentDate.getTime());
+                            }
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    // Добавляем новые даты
+                    const newSelectedDates = [...selectedDates, ...datesToAdd];
+                    window.fp.setDate(newSelectedDates);
+
+                    // Обновляем отображение
+                    window.updateSelectedDates(newSelectedDates);
+                });
+
+                // Кнопка очистки
+                document.getElementById('clear-dates').addEventListener('click', function() {
+                    window.fp.clear();
+                    // Обновляем отображение
+                    window.updateSelectedDates([]);
+                });
+
+                // Инициализация текущих дат
+                window.updateSelectedDates(window.fp.selectedDates);
+            }
+
+            // Автоматическое обновление даты окончания
+            const startDateInput = document.querySelector('input[name="start_date"]');
+            const endDateInput = document.querySelector('input[name="end_date"]');
+
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function() {
+                    if (endDateInput.value && new Date(endDateInput.value) < new Date(this.value)) {
+                        endDateInput.value = this.value;
+                    }
+                });
+            }
+
+            // Инициализация подсказок Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
+</body>
+</html>
