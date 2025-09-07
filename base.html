@@ -355,6 +355,32 @@
         .status-unavailable::before {
             transform: rotate(-45deg);
         }
+
+        /* Новые стили для расписания */
+        .week-divider {
+            border-right: 2px solid #dee2e6 !important;
+        }
+        .month-table th, .month-table td {
+            min-width: 100px;
+        }
+        .btn-group .btn.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .table td {
+            position: relative;
+            min-width: 80px;
+            height: 40px;
+        }
+        .table td i {
+            font-size: 1.2rem;
+        }
+        .bg-success {
+            background-color: #198754 !important;
+        }
+        .bg-danger {
+            background-color: #dc3545 !important;
+        }
     </style>
 </head>
 <body>
@@ -577,6 +603,12 @@
                     }
                 });
             }
+
+            // Инициализация подсказок Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
         });
     </script>
 </body>

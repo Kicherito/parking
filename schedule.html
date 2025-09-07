@@ -7,8 +7,20 @@
         <p class="lead mb-0">На {{ formatted_date }}</p>
     </div>
 
-    <div class="d-flex">
+    <div class="d-flex align-items-center">
+        <div class="btn-group me-3" role="group">
+            <a href="{{ url_for('schedule', date=selected_date, view='day') }}"
+               class="btn btn-outline-primary {{ 'active' if view_type == 'day' }}">
+                По часам
+            </a>
+            <a href="{{ url_for('schedule', date=selected_date, view='week') }}"
+               class="btn btn-outline-primary {{ 'active' if view_type == 'week' }}">
+                По дням
+            </a>
+        </div>
+
         <form method="GET" class="d-flex">
+            <input type="hidden" name="view" value="{{ view_type }}">
             <input type="date" class="form-control me-2" name="date"
                    value="{{ selected_date }}"
                    min="{{ min_date }}" max="{{ max_date }}">
@@ -16,6 +28,16 @@
                 <i class="bi bi-search"></i>
             </button>
         </form>
+
+        <div class="btn-group ms-2">
+            <a href="{{ url_for('schedule', date=previous_date.isoformat(), view=view_type) }}" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <a href="{{ url_for('schedule', date=next_date.isoformat(), view=view_type) }}" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary ms-2">
             <i class="bi bi-arrow-left me-1"></i> Назад
         </a>
@@ -24,67 +46,157 @@
 
 <div class="card">
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Рабочее место</th>
-                        {% for hour in range(working_hours[0], working_hours[1] + 1) %}
-                            <th class="text-center">{{ hour }}:00</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for place, bookings in schedule.items() %}
-                    <tr>
-                        <td class="fw-bold">Место {{ place }}</td>
-                        {% for hour in range(working_hours[0], working_hours[1] + 1) %}
-                            {% set time_slot = hour ~ ':00' %}
-                            {% set is_booked = false %}
-                            {% set booking_user = '' %}
+        {% if view_type == 'day' %}
+            {# Почасовое отображение #}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Рабочее место</th>
+                            {% for hour in range(working_hours[0], working_hours[1]) %}
+                                {% set next_hour = hour + 1 %}
+                                <th class="text-center">{{ hour }}:00 - {{ next_hour }}:00</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for place in range(1, 16) %}
+                        <tr>
+                            <td class="fw-bold">Место {{ place }}</td>
+                            {% for hour in range(working_hours[0], working_hours[1]) %}
+                                {% set hour_start = "%02d:00"|format(hour) %}
+                                {% set hour_end = "%02d:00"|format(hour + 1) %}
+                                {% set is_occupied = false %}
+                                {% set booking_user = '' %}
+                                {% set booking_info = '' %}
 
-                            {% for booking in bookings %}
-                                {% set start_hour = booking.start|split(':')[0]|int %}
-                                {% set end_hour = booking.end|split(':')[0]|int %}
+                                {% if schedule[place] %}
+                                    {% for booking in schedule[place] %}
+                                        {% set booking_start = booking.start %}
+                                        {% set booking_end = booking.end %}
 
-                                {% if hour >= start_hour and hour < end_hour %}
-                                    {% set is_booked = true %}
-                                    {% set booking_user = booking.user %}
+                                        {# Проверяем пересечение интервалов #}
+                                        {% if (booking_start <= hour_start and booking_end >= hour_end) or
+                                              (booking_start >= hour_start and booking_start < hour_end) or
+                                              (booking_end > hour_start and booking_end <= hour_end) or
+                                              (booking_start <= hour_start and booking_end >= hour_end) %}
+                                            {% set is_occupied = true %}
+                                            {% set booking_user = booking.user %}
+                                            {% set booking_info = booking.start + ' - ' + booking.end %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if is_occupied %}
+                                    <td class="text-center position-relative"
+                                        data-bs-toggle="tooltip"
+                                        title="Занято: {{ booking_user }} ({{ booking_info }})">
+                                        <i class="bi bi-person-fill text-danger"></i>
+                                    </td>
+                                {% else %}
+                                    <td class="text-center">
+                                        <i class="bi bi-check-circle text-success"></i>
+                                    </td>
                                 {% endif %}
                             {% endfor %}
-
-                            {% if is_booked %}
-                                <td class="text-center bg-danger-light"
-                                    data-bs-toggle="tooltip"
-                                    title="Занято: {{ booking_user }}">
-                                    <i class="bi bi-person-fill"></i>
-                                </td>
-                            {% else %}
-                                <td class="text-center bg-success-light">
-                                    <i class="bi bi-check-lg"></i>
-                                </td>
-                            {% endif %}
+                        </tr>
                         {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+
+        {% elif view_type == 'week' %}
+            {# Недельное отображение #}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Рабочее место</th>
+                            {% for day in week_days %}
+                                <th class="text-center">
+                                    {{ day.date.strftime('%d.%m') }}<br>
+                                    {{ ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][day.date.weekday()] }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for place in range(1, 16) %}
+                        <tr>
+                            <td class="fw-bold">Место {{ place }}</td>
+                            {% for day in week_days %}
+                                {% set is_occupied = day.schedule[place]|length > 0 %}
+                                {% set booking_users = [] %}
+
+                                {% if is_occupied %}
+                                    {% for booking in day.schedule[place] %}
+                                        {% set _ = booking_users.append(booking.user) %}
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if is_occupied %}
+                                    <td class="text-center position-relative"
+                                        data-bs-toggle="tooltip"
+                                        title="Занято пользователями: {{ booking_users|join(', ') }}">
+                                        <i class="bi bi-person-fill text-danger"></i>
+                                    </td>
+                                {% else %}
+                                    <td class="text-center">
+                                        <i class="bi bi-check-circle text-success"></i>
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
 
         <div class="mt-4">
+            <h5>Легенда:</h5>
             <div class="d-flex align-items-center mb-2">
-                <div class="bg-success-light p-2 me-2 rounded">
-                    <i class="bi bi-check-lg"></i>
+                <div class="p-2 me-2">
+                    <i class="bi bi-check-circle text-success"></i>
                 </div>
                 <span>Свободно</span>
             </div>
             <div class="d-flex align-items-center">
-                <div class="bg-danger-light p-2 me-2 rounded">
-                    <i class="bi bi-person-fill"></i>
+                <div class="p-2 me-2">
+                    <i class="bi bi-person-fill text-danger"></i>
                 </div>
                 <span>Занято</span>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Инициализация подсказок Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+
+<style>
+    .table td {
+        position: relative;
+        min-width: 80px;
+        height: 40px;
+    }
+    .table td i {
+        font-size: 1.2rem;
+    }
+    .btn-group .btn.active {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    .week-divider {
+        border-right: 2px solid #dee2e6;
+    }
+</style>
 {% endblock %}
