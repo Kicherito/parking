@@ -40,17 +40,6 @@ class Booking(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-# Инициализация БД
-@app.before_request
-def create_tables():
-    db.create_all()
-    # Создаем рабочие места, если их нет
-    if Workplace.query.count() == 0:
-        for i in range(1, 16):
-            workplace = Workplace(number=i)
-            db.session.add(workplace)
-        db.session.commit()
-
 
 class UserManager:
     def __init__(self):
@@ -186,4 +175,15 @@ booking_system = OfficeBookingSystem()
 # ... (index, login, register, dashboard, check_availability, book, cancel, schedule, logout)
 
 if __name__ == '__main__':
+    # Создаем таблицы в БД перед запуском приложения
+    with app.app_context():
+        db.create_all()
+
+        # Создаем рабочие места, если их нет
+        if Workplace.query.count() == 0:
+            for i in range(1, 16):
+                workplace = Workplace(number=i)
+                db.session.add(workplace)
+            db.session.commit()
+
     app.run(host='0.0.0.0', port=5000, debug=True)
