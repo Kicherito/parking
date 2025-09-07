@@ -8,7 +8,7 @@ app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Конфигурация PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://booking_user:your_password@localhost/office_booking_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://Valet:Valet!2@localhost/office_booking_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -186,4 +186,4 @@ booking_system = OfficeBookingSystem()
 # ... (index, login, register, dashboard, check_availability, book, cancel, schedule, logout)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
