@@ -49,29 +49,27 @@
                 <form method="POST" action="{{ url_for('check_availability') }}">
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Начало бронирования</label>
+                            <label class="form-label">Дата</label>
                             <div class="mb-2">
-                                <input type="date" class="form-control mb-2" name="start_date"
+                                <input type="date" class="form-control" name="date"
                                        min="{{ min_date }}" max="{{ max_date }}"
-                                       value="{{ start_date or today }}" required>
+                                       value="{{ today }}" required>
                             </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Начало</label>
                             <div class="time-input-group">
                                 <input type="time" class="form-control" name="start_time"
                                        min="08:00" max="18:00" step="900"
-                                       value="{{ start_time or '08:00' }}" required>
+                                       value="08:00" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Окончание бронирования</label>
-                            <div class="mb-2">
-                                <input type="date" class="form-control mb-2" name="end_date"
-                                       min="{{ min_date }}" max="{{ max_date }}"
-                                       value="{{ end_date or today }}" required>
-                            </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Окончание</label>
                             <div class="time-input-group">
                                 <input type="time" class="form-control" name="end_time"
                                        min="08:00" max="18:00" step="900"
-                                       value="{{ end_time or '18:00' }}" required>
+                                       value="18:00" required>
                             </div>
                         </div>
                     </div>
@@ -82,22 +80,22 @@
 
                 {% if available_places is defined %}
                 <div class="mt-4">
-                    <h5>Статус рабочих мест на период:</h5>
+                    <h5>Статус рабочих мест на {{ date }}:</h5>
                     <p class="text-muted">
-                        {{ start_date }} {{ start_time }} - {{ end_date }} {{ end_time }}
+                        {{ start_time }} - {{ end_time }}
                     </p>
 
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         {% for place in range(1, 16) %}
                             {% if place in available_places %}
-                                <span class="badge place-available py-2 px-3 fs-6">Место {{ place }}</span>
+                                <span class="badge bg-success py-2 px-3 fs-6">Место {{ place }}</span>
                             {% else %}
-                                <span class="badge place-unavailable py-2 px-3 fs-6">Место {{ place }}</span>
+                                <span class="badge bg-danger py-2 px-3 fs-6">Место {{ place }}</span>
                             {% endif %}
                         {% endfor %}
                     </div>
 
-                    <div class="status-legend">
+                    <div class="status-legend mt-3">
                         <div class="status-item">
                             <div class="status-color status-available"></div>
                             <span>Свободно</span>
@@ -136,13 +134,13 @@
                             <div class="col-md-6">
                                 <input type="time" class="form-control" name="start_time"
                                        min="08:00" max="18:00" step="900"
-                                       value="{{ start_time or '08:00' }}" required>
+                                       value="08:00" required>
                                 <div class="form-text">Начало</div>
                             </div>
                             <div class="col-md-6">
                                 <input type="time" class="form-control" name="end_time"
                                        min="08:00" max="18:00" step="900"
-                                       value="{{ end_time or '18:00' }}" required>
+                                       value="18:00" required>
                                 <div class="form-text">Окончание</div>
                             </div>
                         </div>
@@ -225,7 +223,11 @@
                                 </a>
                             </div>
                             <div class="d-flex align-items-center">
-                                <span class="badge bg-primary me-2">Активно</span>
+                                {% if booking.end_dt > booking.start_dt.now() %}
+                                    <span class="badge bg-primary me-2">Активно</span>
+                                {% else %}
+                                    <span class="badge bg-secondary me-2">Завершено</span>
+                                {% endif %}
                                 <small>Забронировано: {{ booking.start_dt.strftime('%d.%m.%Y') }}</small>
                             </div>
                         </div>
@@ -277,7 +279,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Обработка клика на свободных местах
-        document.querySelectorAll('.place-available').forEach(badge => {
+        document.querySelectorAll('.badge.bg-success').forEach(badge => {
             badge.addEventListener('click', function() {
                 // Извлекаем номер места
                 const placeText = this.textContent;
@@ -285,21 +287,6 @@
 
                 // Заполняем поле выбора места
                 document.querySelector('select[name="place"]').value = placeNumber;
-
-                // Получаем даты из формы проверки
-                const startDate = document.querySelector('input[name="start_date"]').value;
-                const endDate = document.querySelector('input[name="end_date"]').value;
-
-                if (window.fp) {
-                    // Генерируем все даты между startDate и endDate
-                    const dates = getDatesBetween(new Date(startDate), new Date(endDate));
-
-                    // Устанавливаем даты в календарь
-                    window.fp.setDate(dates);
-
-                    // Принудительно обновляем отображение
-                    window.updateSelectedDates(dates);
-                }
 
                 // Прокручиваем к форме бронирования
                 document.getElementById('booking-form').scrollIntoView({

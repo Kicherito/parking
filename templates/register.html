@@ -8,13 +8,6 @@
                 <i class="bi bi-person-plus me-2"></i>Регистрация
             </div>
             <div class="card-body p-4">
-                {% if error %}
-                <div class="alert alert-danger d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-circle me-2"></i>
-                    <div>{{ error }}</div>
-                </div>
-                {% endif %}
-
                 <form method="POST">
                     <div class="mb-3">
                         <label for="username" class="form-label">Логин</label>
@@ -29,6 +22,14 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input type="password" class="form-control" id="password" name="password" placeholder="Придумайте пароль" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Подтверждение пароля</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Повторите пароль" required>
                         </div>
                     </div>
 
