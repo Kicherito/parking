@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='/root/parking/templates')
 app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
@@ -382,5 +382,6 @@ if __name__ == '__main__':
                 db.session.add(workplace)
             db.session.commit()
             print("Созданы рабочие места 1-15")
+
 
     app.run(host='0.0.0.0', port=5000, debug=True)
