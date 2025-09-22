@@ -8,7 +8,7 @@ app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Конфигурация PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet!2@localhost/office_booking_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet12@localhost/office_booking_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -507,5 +507,6 @@ if __name__ == '__main__':
 
             db.session.commit()
             print("Созданы рабочие места: 15 для РЦИТ Ижевск, 10 для ООКИС Москва")
+
 
     app.run(host='0.0.0.0', port=5000, debug=True)
