@@ -321,11 +321,13 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Словарь с максимальным количеством мест для каждого отдела
-        const departmentMaxPlaces = {
-            'РЦИТ Ижевск': 15,
-            'ООКИС Москва': 10
-        };
+        // Динамическое определение максимального количества мест для отделов
+        const departmentMaxPlaces = {{ department_places | tojson }};
+
+        // Универсальная функция для получения максимального количества мест
+        function getMaxPlacesForDepartment(department) {
+            return departmentMaxPlaces[department] || 10;
+        }
 
         // Флаг для отслеживания инициализации
         let isInitialized = false;
@@ -575,7 +577,7 @@
             // Получаем выбранный отдел
             const departmentSelect = document.getElementById('department-select');
             const selectedDepartment = departmentSelect.options[departmentSelect.selectedIndex].text;
-            const maxPlaces = departmentMaxPlaces[selectedDepartment];
+            const maxPlaces = getMaxPlacesForDepartment(selectedDepartment);
 
             if (!maxPlaces) {
                 container.innerHTML = '<div class="alert alert-warning w-100">Неизвестный отдел</div>';

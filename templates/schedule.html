@@ -72,7 +72,8 @@
                     <tbody>
                         {% for department in departments %}
                             {% if department_filter == 'all' or department_filter == department %}
-                                {% for place in range(1, department == 'РЦИТ Ижевск' and 16 or 11) %}
+                                {% set max_places = department_places[department] %}
+                                {% for place in range(1, max_places + 1) %}
                                     <tr>
                                         <td class="fw-bold">{{ department }} - Место {{ place }}</td>
                                         {% for hour in range(working_hours[0], working_hours[1]) %}
@@ -138,7 +139,8 @@
                     <tbody>
                         {% for department in departments %}
                             {% if department_filter == 'all' or department_filter == department %}
-                                {% for place in range(1, department == 'РЦИТ Ижевск' and 16 or 11) %}
+                                {% set max_places = department_places[department] %}
+                                {% for place in range(1, max_places + 1) %}
                                     <tr>
                                         <td class="fw-bold">{{ department }} - Место {{ place }}</td>
                                         {% for day in week_days %}
