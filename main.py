@@ -3,17 +3,15 @@ from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 import re
 
-app = Flask(__name__, template_folder='/root/parking/templates')
+app = Flask(__name__)
 app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Конфигурация PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet12@localhost/office_booking_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet!2@localhost/office_booking_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-
 
 # Модели БД
 class User(db.Model):
@@ -24,7 +22,6 @@ class User(db.Model):
     default_department = db.Column(db.String(100), nullable=True)
     has_default_department = db.Column(db.Boolean, default=False)
     bookings = db.relationship('Booking', backref='user', lazy=True)
-
 
 class Workplace(db.Model):
     __tablename__ = 'workplaces'
@@ -37,7 +34,6 @@ class Workplace(db.Model):
         db.UniqueConstraint('number', 'department', name='workplaces_number_department_key'),
     )
 
-
 class Booking(db.Model):
     __tablename__ = 'bookings'
     id = db.Column(db.Integer, primary_key=True)
@@ -46,7 +42,6 @@ class Booking(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 
 class UserManager:
     def __init__(self):
@@ -94,7 +89,6 @@ class UserManager:
             session['has_default_department'] = user.has_default_department
             return True
         return False
-
 
 class OfficeBookingSystem:
     def __init__(self):
@@ -241,11 +235,18 @@ class OfficeBookingSystem:
         departments = db.session.query(Workplace.department).distinct().all()
         return [dept[0] for dept in departments]
 
+    def get_department_places_count(self):
+        # Получаем количество мест для каждого отдела
+        departments = self.get_departments()
+        department_places = {}
+        for department in departments:
+            count = Workplace.query.filter_by(department=department).count()
+            department_places[department] = count
+        return department_places
 
 # Инициализация систем
 user_manager = UserManager()
 booking_system = OfficeBookingSystem()
-
 
 # Маршруты Flask
 @app.route('/')
@@ -253,7 +254,6 @@ def index():
     if 'username' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -269,11 +269,9 @@ def login():
 
     return render_template('login.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Проверяем наличие всех необходимых полей в запросе
         if not all(key in request.form for key in ['username', 'password', 'confirm_password']):
             flash('Все поля обязательны для заполнения', 'error')
             return render_template('register.html')
@@ -292,29 +290,20 @@ def register():
 
     return render_template('register.html')
 
-
 @app.route('/dashboard')
 def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    # Получаем пользователя и его отдел по умолчанию
     user_obj = User.query.filter_by(username=session['username']).first()
     default_department = user_obj.default_department if user_obj and user_obj.has_default_department else None
     has_default_department = user_obj.has_default_department if user_obj else False
 
-    # Получаем параметр фильтрации по дате
     filter_date = request.args.get('filter_date')
-
-    user_bookings = booking_system.show_user_bookings(
-        session['username'],
-        filter_date=filter_date
-    )
-
-    # Получаем список отделов
+    user_bookings = booking_system.show_user_bookings(session['username'], filter_date=filter_date)
     departments = booking_system.get_departments()
+    department_places = booking_system.get_department_places_count()
 
-    # Добавляем передачу working_hours и других переменных в шаблон
     return render_template(
         'dashboard.html',
         username=session['username'],
@@ -327,9 +316,9 @@ def dashboard():
         min_date=datetime.now().strftime('%Y-%m-%d'),
         max_date=(datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
         now=datetime.now(),
-        filter_date=filter_date
+        filter_date=filter_date,
+        department_places=department_places
     )
-
 
 @app.route('/get_available_places', methods=['POST'])
 def get_available_places():
@@ -346,9 +335,7 @@ def get_available_places():
         return jsonify({'error': 'Missing parameters'}), 400
 
     available_places = booking_system.get_available_places(department, dates, start_time, end_time)
-
     return jsonify({'available_places': available_places})
-
 
 @app.route('/book', methods=['POST'])
 def book():
@@ -368,7 +355,6 @@ def book():
 
     return redirect(url_for('dashboard'))
 
-
 @app.route('/cancel/<int:booking_id>')
 def cancel(booking_id):
     if 'username' not in session:
@@ -379,12 +365,10 @@ def cancel(booking_id):
 
     return redirect(url_for('dashboard'))
 
-
 @app.route('/schedule')
 def schedule():
-    # Получаем параметры из URL
     selected_date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
-    view_type = request.args.get('view', 'day')  # 'day' или 'week'
+    view_type = request.args.get('view', 'day')
     department_filter = request.args.get('department', 'all')
 
     try:
@@ -392,27 +376,21 @@ def schedule():
     except ValueError:
         selected_date = datetime.now().date()
 
-    # Рассчитываем даты для навигации
     if view_type == 'week':
-        # Для недельного представления переключаемся на неделю вперед/назад
         days_delta = 7
     else:
-        # Для дневного представления переключаемся на день вперед/назад
         days_delta = 1
 
     previous_date = selected_date - timedelta(days=days_delta)
     next_date = selected_date + timedelta(days=days_delta)
 
-    # Получаем все бронирования
     query = db.session.query(Booking, Workplace, User).join(Workplace).join(User)
 
-    # Фильтрация по отделу
     if department_filter != 'all':
         query = query.filter(Workplace.department == department_filter)
 
     bookings_data = query.order_by(Booking.start_time).all()
 
-    # Формируем расписание
     schedule_data = {}
     for booking, workplace, user in bookings_data:
         date_str = booking.start_time.date().isoformat()
@@ -427,7 +405,6 @@ def schedule():
             'department': workplace.department
         }
 
-    # Для недельного представления
     if view_type == 'week':
         start_of_week = selected_date - timedelta(days=selected_date.weekday())
         week_days = []
@@ -442,8 +419,8 @@ def schedule():
     else:
         week_days = None
 
-    # Получаем список отделов для фильтра
     departments = booking_system.get_departments()
+    department_places = booking_system.get_department_places_count()
 
     return render_template('schedule.html',
                            schedule=schedule_data,
@@ -457,8 +434,8 @@ def schedule():
                            min_date=datetime.now().strftime('%Y-%m-%d'),
                            max_date=(datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
                            departments=departments,
-                           department_filter=department_filter)
-
+                           department_filter=department_filter,
+                           department_places=department_places)
 
 @app.route('/save_default_department', methods=['POST'])
 def save_default_department():
@@ -480,17 +457,14 @@ def save_default_department():
 
     return jsonify({'error': 'Failed to save default department'}), 400
 
-
 @app.route('/logout')
 def logout():
     user_manager.logout()
     flash('Вы вышли из системы', 'success')
     return redirect(url_for('login'))
 
-
 if __name__ == '__main__':
-
+    with app.app_context():
+        db.create_all()
 
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
