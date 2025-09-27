@@ -489,25 +489,8 @@ def logout():
 
 
 if __name__ == '__main__':
-    # Создаем таблицы в БД перед запуском приложения
-    with app.app_context():
-        db.create_all()
-
-        # Создаем рабочие места, если их нет
-        if Workplace.query.count() == 0:
-            # Места для РЦИТ Ижевск (15 мест)
-            for i in range(1, 16):
-                workplace = Workplace(number=i, department='РЦИТ Ижевск')
-                db.session.add(workplace)
-
-            # Места для ООКИС Москва (10 мест)
-            for i in range(1, 11):
-                workplace = Workplace(number=i, department='ООКИС Москва')
-                db.session.add(workplace)
-
-            db.session.commit()
-            print("Созданы рабочие места: 15 для РЦИТ Ижевск, 10 для ООКИС Москва")
 
 
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
