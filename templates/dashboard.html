@@ -1,319 +1,395 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Приветствие -->
-<div class="hero-section animate-slide-up" data-aos="fade-up">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 class="display-5 fw-bold">Добро пожаловать, {{ username }}!</h1>
-            <p class="lead">Система бронирования рабочих мест для максимальной продуктивности</p>
-            <div class="mt-4">
-                <span class="badge bg-light text-dark me-2"><i class="bi bi-lightning-fill me-1"></i>Быстро</span>
-                <span class="badge bg-light text-dark"><i class="bi bi-shield-check me-1"></i>Надежно</span>
-            </div>
-        </div>
-        <div class="col-md-4 text-center">
-            <div class="feature-icon mx-auto">
-                <i class="bi bi-person-workspace"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Статистика -->
-<div class="row mb-4">
-    <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="100">
-        <div class="stat-card">
-            <div class="stat-number">{{ bookings|length }}</div>
-            <div class="stat-label">Активных бронирований</div>
-            <div class="mt-3">
-                <i class="bi bi-calendar-check text-primary" style="font-size: 2rem;"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="200">
-        <div class="stat-card">
-            <div class="stat-number">{{ departments|length }}</div>
-            <div class="stat-label">Доступных отделов</div>
-            <div class="mt-3">
-                <i class="bi bi-buildings text-primary" style="font-size: 2rem;"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="300">
-        <div class="stat-card">
-            <div class="stat-number">{{ today }}</div>
-            <div class="stat-label">Сегодняшняя дата</div>
-            <div class="mt-3">
-                <i class="bi bi-calendar-day text-primary" style="font-size: 2rem;"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Левая колонка: Бронирование -->
-    <div class="col-lg-8">
-        <div class="card mb-4" data-aos="fade-up">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-plus-circle me-2"></i>Забронировать рабочее место
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('book') }}" id="booking-form">
-                    <input type="hidden" name="dates" id="hidden-dates">
-                    <input type="hidden" name="place_id" id="selected-place-id">
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Выберите отдел</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="form-select flex-grow-1" id="department-select" required>
-                                <option value="" disabled {% if not has_default_department %}selected{% endif %}>Выберите отдел</option>
-                                {% for department in departments %}
-                                    <option value="{{ department }}"
-                                        {% if has_default_department and department == default_department %}selected{% endif %}>
-                                        {{ department }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-check mt-2">
-                            <input class="form-check-input" type="checkbox" id="save-as-default"
-                                   {% if has_default_department %}checked{% endif %}>
-                            <label class="form-check-label" for="save-as-default">
-                                Использовать как отдел по умолчанию
-                            </label>
-                        </div>
-                        {% if has_default_department %}
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i> Ваш отдел по умолчанию: <strong>{{ default_department }}</strong>
-                        </div>
-                        {% endif %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Приветствие -->
+        <div class="hero-section animate-slide-up" data-aos="fade-up">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">Добро пожаловать, {{ username }}!</h1>
+                    <p class="lead">Система бронирования рабочих мест для максимальной продуктивности</p>
+                    <div class="mt-4">
+                        <span class="badge bg-light text-dark me-2"><i class="bi bi-lightning-fill me-1"></i>Быстро</span>
+                        <span class="badge bg-light text-dark"><i class="bi bi-shield-check me-1"></i>Надежно</span>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Время бронирования</label>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
-                                    <input type="time" class="form-control" name="start_time" id="start-time"
-                                           min="08:00" max="18:00" step="900"
-                                           value="08:00" required>
-                                </div>
-                                <div class="form-text">Начало работы</div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
-                                    <input type="time" class="form-control" name="end_time" id="end-time"
-                                           min="08:00" max="18:00" step="900"
-                                           value="18:00" required>
-                                </div>
-                                <div class="form-text">Окончание работы</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Выберите даты для бронирования</label>
-
-                        <div class="mb-3">
-                            <div class="weekdays-selector d-flex flex-wrap gap-2">
-                                <button type="button" id="select-workdays" class="btn btn-outline-primary btn-day">
-                                    <i class="bi bi-calendar-week me-1"></i> Рабочие дни
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="1">
-                                    Пн
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="2">
-                                    Вт
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="3">
-                                    Ср
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="4">
-                                    Чт
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="5">
-                                    Пт
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="6">
-                                    Сб
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="0">
-                                    Вс
-                                </button>
-                                <button type="button" id="clear-dates" class="btn btn-outline-danger btn-day">
-                                    <i class="bi bi-x-circle me-1"></i> Очистить
-                                </button>
-                            </div>
-                        </div>
-
-                        <div id="date-picker" class="mb-3"></div>
-
-                        <div class="selected-dates-container bg-light p-3 rounded">
-                            <h6><i class="bi bi-calendar-check me-1"></i> Выбранные даты:</h6>
-                            <div id="selected-dates" class="d-flex flex-wrap mt-2">
-                                <!-- Выбранные даты будут отображаться здесь -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Кнопка для проверки доступности -->
-                    <button type="button" class="btn btn-primary w-100 mb-3" id="check-availability-btn">
-                        <i class="bi bi-search me-2"></i>Показать доступные места
-                    </button>
-
-                    <!-- Контейнер для отображения доступных места -->
-                    <div id="available-places-container" class="mt-4" style="display: none;">
-                        <h5><i class="bi bi-grid me-2"></i>Доступные места в отделе <span id="selected-department-name"></span>:</h5>
-                        <p class="text-muted" id="selected-time-range"></p>
-
-                        <div class="d-flex flex-wrap gap-2 mt-3" id="available-places">
-                            <!-- Доступные места будут отображаться здесь -->
-                        </div>
-
-                        <div class="status-legend mt-3">
-                            <div class="status-item">
-                                <div class="status-color status-available"></div>
-                                <span>Свободно</span>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-color status-unavailable"></div>
-                                <span>Занято</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100 mt-3" id="book-button" disabled>
-                        <i class="bi bi-check-circle me-2"></i>Забронировать выбранное место
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Правая колонка: Мои бронирования -->
-    <div class="col-lg-4">
-        <div class="card mb-4" data-aos="fade-up" data-aos-delay="100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="bi bi-list-check me-2"></i>Мои бронирования
                 </div>
-                <div>
-                    <form method="GET" class="d-flex">
-                        <div class="input-group input-group-sm">
-                            <input type="date" class="form-control" name="filter_date"
-                                   value="{{ filter_date if filter_date else '' }}"
-                                   min="{{ min_date }}" max="{{ max_date }}">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-funnel"></i>
+                <div class="col-md-4 text-center">
+                    <div class="feature-icon mx-auto">
+                        <i class="bi bi-person-workspace"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Обновленная статистика -->
+        <div class="row mb-4">
+            <!-- Ближайшее бронирование -->
+            <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="100">
+                <div class="stat-card">
+                    {% if nearest_booking_info %}
+                        <div class="d-flex align-items-center justify-content-center mb-3">
+                            <i class="bi bi-calendar-event text-primary me-3" style="font-size: 2.5rem;"></i>
+                            <div>
+                                <div class="stat-number">{{ nearest_booking_info.date }}</div>
+                                <div class="stat-label">Ближайшее бронирование</div>
+                            </div>
+                        </div>
+                        <div class="booking-details text-center">
+                            <div class="mb-2">
+                                <i class="bi bi-clock me-2 text-muted"></i>
+                                <span class="fw-semibold">{{ nearest_booking_info.time }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <i class="bi bi-geo-alt me-2 text-muted"></i>
+                                <span class="fw-semibold">Место {{ nearest_booking_info.place }}</span>
+                            </div>
+                            <div>
+                                <i class="bi bi-building me-2 text-muted"></i>
+                                <span class="text-muted">{{ nearest_booking_info.location }}</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="stat-number">Нет</div>
+                        <div class="stat-label">Ближайшее бронирование</div>
+                        <div class="mt-3">
+                            <i class="bi bi-calendar-event text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Активные бронирования -->
+            <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="200">
+                <div class="stat-card">
+                    <div class="stat-number">{{ bookings|length }}</div>
+                    <div class="stat-label">Активных бронирований</div>
+                    <div class="mt-3">
+                        <i class="bi bi-calendar-check text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <!-- Сегодняшняя дата -->
+            <div class="col-md-4 mb-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="stat-card">
+                    <div class="stat-number">{{ today }}</div>
+                    <div class="stat-label">Сегодняшняя дата</div>
+                    <div class="mt-3">
+                        <i class="bi bi-calendar-day text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Левая колонка: Бронирование -->
+            <div class="col-lg-8">
+                <div class="card mb-4" data-aos="fade-up">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="bi bi-plus-circle me-2"></i>Забронировать рабочее место
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('book') }}" id="booking-form">
+                            <input type="hidden" name="dates" id="hidden-dates">
+                            <input type="hidden" name="place_id" id="selected-place-id">
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Выберите локацию</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select flex-grow-1" id="location-select" required>
+                                        <option value="" disabled {% if not has_default_location %}selected{% endif %}>Выберите локацию</option>
+                                        {% for location in locations %}
+                                            <option value="{{ location }}"
+                                                {% if has_default_location and location == default_location %}selected{% endif %}>
+                                                {{ location }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="save-as-default"
+                                           {% if has_default_location %}checked{% endif %}>
+                                    <label class="form-check-label" for="save-as-default">
+                                        Использовать как локацию по умолчанию
+                                    </label>
+                                </div>
+                                {% if has_default_location %}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i> Ваша локация по умолчанию: <strong>{{ default_location }}</strong>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Время бронирования</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                            <input type="time" class="form-control" name="start_time" id="start-time"
+                                                   value="08:00" required>
+                                        </div>
+                                        <div class="form-text">Начало бронирования</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                            <input type="time" class="form-control" name="end_time" id="end-time"
+                                                   value="18:00" required>
+                                        </div>
+                                        <div class="form-text">Окончание бронирования</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Выберите даты для бронирования</label>
+
+                                <div class="mb-3">
+                                    <div class="weekdays-selector d-flex flex-wrap gap-2">
+                                        <button type="button" id="select-workdays" class="btn btn-outline-primary btn-day">
+                                            <i class="bi bi-calendar-week me-1"></i> Рабочие дни
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="1">
+                                            Пн
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="2">
+                                            Вт
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="3">
+                                            Ср
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="4">
+                                            Чт
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="5">
+                                            Пт
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="6">
+                                            Сб
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-day day-selector" data-day="0">
+                                            Вс
+                                        </button>
+                                        <button type="button" id="clear-dates" class="btn btn-outline-danger btn-day">
+                                            <i class="bi bi-x-circle me-1"></i> Очистить
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="date-picker" class="mb-3"></div>
+
+                                <div class="selected-dates-container bg-light p-3 rounded">
+                                    <h6><i class="bi bi-calendar-check me-1"></i> Выбранные даты:</h6>
+                                    <div id="selected-dates" class="d-flex flex-wrap mt-2">
+                                        <!-- Выбранные даты будут отображаться здесь -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопка для проверки доступности -->
+                            <button type="button" class="btn btn-primary w-100 mb-3" id="check-availability-btn">
+                                <i class="bi bi-search me-2"></i>Показать доступные места
                             </button>
-                            {% if filter_date %}
-                                <a href="{{ url_for('dashboard') }}" class="btn btn-danger">
-                                    <i class="bi bi-x"></i>
-                                </a>
+
+                            <!-- Контейнер для отображения доступных места -->
+                            <div id="available-places-container" class="mt-4" style="display: none;">
+                                <h5><i class="bi bi-grid me-2"></i>Доступные места в локации <span id="selected-location-name"></span>:</h5>
+                                <p class="text-muted" id="selected-time-range"></p>
+
+                                <div class="d-flex flex-wrap gap-2 mt-3" id="available-places">
+                                    <!-- Доступные места будут отображаться здесь -->
+                                </div>
+
+                                <div class="status-legend mt-3">
+                                    <div class="status-item">
+                                        <div class="status-color status-available"></div>
+                                        <span>Свободно</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-color status-unavailable"></div>
+                                        <span>Занято</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 mt-3" id="book-button" disabled>
+                                <i class="bi bi-check-circle me-2"></i>Забронировать выбранное место
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка: Мои бронирования -->
+            <div class="col-lg-4">
+                <div class="card mb-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-list-check me-2"></i>Мои бронирования
+                        </div>
+                        <div class="d-flex gap-2">
+                            {% if bookings %}
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                                <i class="bi bi-trash"></i> Удалить все
+                            </button>
                             {% endif %}
                         </div>
-                    </form>
-                </div>
-            </div>
-            <div class="card-body">
-                {% if bookings %}
-                    <div class="list-group">
-                        {% for booking in bookings %}
-                        <div class="booking-card">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div class="flex-grow-1">
-                                    <h5 class="mb-1"><i class="bi bi-geo-alt me-2"></i>Место {{ booking.place }}</h5>
-                                    <span class="text-muted small">
-                                        <i class="bi bi-building me-1"></i>{{ booking.department }}
-                                    </span>
-                                    <div class="mt-2">
-                                        <span class="fw-bold text-primary fs-6">{{ booking.start_dt.strftime('%d.%m.%Y') }}</span>
-                                        <div class="booking-time">
-                                            <i class="bi bi-clock"></i>
-                                            <span>{{ booking.start_dt.strftime('%H:%M') }} - {{ booking.end_dt.strftime('%H:%M') }}</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Фильтр по диапазону дат -->
+                        <div class="mb-4">
+                            <form method="GET" id="filter-form">
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Фильтр по дате:</label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="date" class="form-control form-control-sm" name="start_date"
+                                               value="{{ start_date if start_date else '' }}"
+                                               min="{{ min_date }}" max="{{ max_date }}" placeholder="Начальная дата">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="date" class="form-control form-control-sm" name="end_date"
+                                               value="{{ end_date if end_date else '' }}"
+                                               min="{{ min_date }}" max="{{ max_date }}" placeholder="Конечная дата">
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="d-flex gap-2 mt-2">
+                                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-funnel me-1"></i> Применить
+                                            </button>
+                                            {% if start_date or end_date %}
+                                                <a href="{{ url_for('dashboard') }}" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-x"></i>
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
-                                <a href="{{ url_for('cancel', booking_id=booking.id) }}" class="btn btn-sm btn-outline-danger ms-2" style="white-space: nowrap;">
-                                    <i class="bi bi-x-circle"></i> Отменить
-                                </a>
-                            </div>
-                            <div class="d-flex align-items-center mt-2">
-                                {% if booking.status == 'active' %}
-                                    <span class="badge bg-primary me-2"><i class="bi bi-check-circle me-1"></i>Активно</span>
-                                {% else %}
-                                    <span class="badge bg-secondary me-2"><i class="bi bi-clock-history me-1"></i>Завершено</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-calendar-x" style="font-size: 3rem; color: #adb5bd;"></i>
-                        <h5 class="mt-3">Нет активных бронирований</h5>
-                        <p class="text-muted">У вас пока нет забронированных рабочих мест</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+                            </form>
 
-        <div class="card" data-aos="fade-up" data-aos-delay="200">
-            <div class="card-header">
-                <i class="bi bi-info-circle me-2"></i>Информация о системе
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex align-items-center">
-                        <div class="bg-primary rounded p-2 me-3">
-                            <i class="bi bi-calendar-check text-white"></i>
+                            {% if start_date or end_date %}
+                            <div class="mt-2">
+                                <form method="POST" action="{{ url_for('cancel_bookings_in_range') }}" id="delete-range-form">
+                                    <input type="hidden" name="start_date" value="{{ start_date }}">
+                                    <input type="hidden" name="end_date" value="{{ end_date }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Вы уверены, что хотите удалить все бронирования в выбранном диапазоне?')">
+                                        <i class="bi bi-trash me-1"></i> Удалить все в диапазоне
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div>
-                            <strong>Правила бронирования</strong>
-                            <div class="text-muted">Макс. до 30 дней вперед</div>
-                        </div>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <div class="bg-primary rounded p-2 me-3">
-                            <i class="bi bi-clock text-white"></i>
-                        </div>
-                        <div>
-                            <strong>Рабочее время</strong>
-                            <div class="text-muted">{{ working_hours[0] }}:00 - {{ working_hours[1] }}:00</div>
-                        </div>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <div class="bg-primary rounded p-2 me-3">
-                            <i class="bi bi-building text-white"></i>
-                        </div>
-                        <div>
-                            <strong>Доступные отделы</strong>
-                            <div class="text-muted">
-                                {% for department in departments %}
-                                    <span class="badge bg-light text-dark me-1 mb-1">{{ department }}</span>
+
+                        {% if bookings %}
+                            <div class="list-group">
+                                {% for booking in bookings %}
+                                <div class="booking-card">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1"><i class="bi bi-geo-alt me-2"></i>Место {{ booking.place }}</h5>
+                                            <span class="text-muted small">
+                                                <i class="bi bi-building me-1"></i>{{ booking.location }}
+                                            </span>
+                                            <div class="mt-2">
+                                                <span class="fw-bold text-primary fs-6">{{ booking.start_dt.strftime('%d.%m.%Y') }}</span>
+                                                <div class="booking-time">
+                                                    <i class="bi bi-clock"></i>
+                                                    <span>{{ booking.start_dt.strftime('%H:%M') }} - {{ booking.end_dt.strftime('%H:%M') }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <a href="{{ url_for('cancel', booking_id=booking.id) }}" class="btn btn-sm btn-outline-danger ms-2" style="white-space: nowrap;">
+                                            <i class="bi bi-x-circle"></i> Отменить
+                                        </a>
+                                    </div>
+                                </div>
                                 {% endfor %}
                             </div>
-                        </div>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <div class="bg-primary rounded p-2 me-3">
-                            <i class="bi bi-star text-white"></i>
-                        </div>
-                        <div>
-                            <strong>Отдел по умолчанию</strong>
-                            <div class="text-muted">
-                                {% if has_default_department %}
-                                    <span class="badge bg-success">{{ default_department }}</span>
-                                {% else %}
-                                    <span class="text-muted">Не установлен</span>
-                                {% endif %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-calendar-x" style="font-size: 3rem; color: #adb5bd;"></i>
+                                <h5 class="mt-3">Нет активных бронирований</h5>
+                                <p class="text-muted">У вас пока нет забронированных рабочих мест</p>
                             </div>
-                        </div>
-                    </li>
-                </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle me-2"></i>Информация о системе
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex align-items-center">
+                                <div class="bg-primary rounded p-2 me-3">
+                                    <i class="bi bi-calendar-check text-white"></i>
+                                </div>
+                                <div>
+                                    <strong>Правила бронирования</strong>
+                                    <div class="text-muted">Макс. до 30 дней вперед</div>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center">
+                                <div class="bg-primary rounded p-2 me-3">
+                                    <i class="bi bi-clock text-white"></i>
+                                </div>
+                                <div>
+                                    <strong>Время бронирования</strong>
+                                    <div class="text-muted">Круглосуточно</div>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center">
+                                <div class="bg-primary rounded p-2 me-3">
+                                    <i class="bi bi-building text-white"></i>
+                                </div>
+                                <div>
+                                    <strong>Доступные локации</strong>
+                                    <div class="text-muted">
+                                        {% for location in locations %}
+                                            <span class="badge bg-light text-dark me-1 mb-1">{{ location }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center">
+                                <div class="bg-primary rounded p-2 me-3">
+                                    <i class="bi bi-eye text-white"></i>
+                                </div>
+                                <div>
+                                    <strong>Отображение бронирований</strong>
+                                    <div class="text-muted">Только будущие брони</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления всех бронирований -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить <strong>все ваши бронирования</strong>?</p>
+                <p class="text-danger small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Это действие нельзя отменить. Все ваши будущие бронирования будут удалены.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="POST" action="{{ url_for('cancel_all_bookings') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Удалить все бронирования</button>
+                </form>
             </div>
         </div>
     </div>
@@ -321,12 +397,12 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Динамическое определение максимального количества мест для отделов
-        const departmentMaxPlaces = {{ department_places | tojson }};
+        // Динамическое определение максимального количества мест для локаций
+        const locationMaxPlaces = {{ location_places | tojson }};
 
         // Универсальная функция для получения максимального количества мест
-        function getMaxPlacesForDepartment(department) {
-            return departmentMaxPlaces[department] || 10;
+        function getMaxPlacesForLocation(location) {
+            return locationMaxPlaces[location] || 10;
         }
 
         // Флаг для отслеживания инициализации
@@ -498,13 +574,13 @@
 
         // Функция для проверки доступности мест
         function checkAvailability() {
-            const department = document.getElementById('department-select').value;
+            const location = document.getElementById('location-select').value;
             const selectedDates = window.fp ? window.fp.selectedDates : [];
             const startTime = document.getElementById('start-time').value;
             const endTime = document.getElementById('end-time').value;
 
-            if (!department) {
-                alert('Пожалуйста, выберите отдел');
+            if (!location) {
+                alert('Пожалуйста, выберите локацию');
                 return;
             }
 
@@ -518,10 +594,10 @@
                 return;
             }
 
-            // Получаем название выбранного отдела
-            const departmentSelect = document.getElementById('department-select');
-            const selectedDepartmentName = departmentSelect.options[departmentSelect.selectedIndex].text;
-            document.getElementById('selected-department-name').textContent = selectedDepartmentName;
+            // Получаем название выбранной локации
+            const locationSelect = document.getElementById('location-select');
+            const selectedLocationName = locationSelect.options[locationSelect.selectedIndex].text;
+            document.getElementById('selected-location-name').textContent = selectedLocationName;
 
             // Форматируем даты для отправки
             const dates = selectedDates.map(date => window.formatDate(date));
@@ -548,7 +624,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    department: department,
+                    location: location,
                     dates: dates,
                     start_time: startTime,
                     end_time: endTime
@@ -574,13 +650,13 @@
             const container = document.getElementById('available-places');
             container.innerHTML = '';
 
-            // Получаем выбранный отдел
-            const departmentSelect = document.getElementById('department-select');
-            const selectedDepartment = departmentSelect.options[departmentSelect.selectedIndex].text;
-            const maxPlaces = getMaxPlacesForDepartment(selectedDepartment);
+            // Получаем выбранную локацию
+            const locationSelect = document.getElementById('location-select');
+            const selectedLocation = locationSelect.options[locationSelect.selectedIndex].text;
+            const maxPlaces = getMaxPlacesForLocation(selectedLocation);
 
             if (!maxPlaces) {
-                container.innerHTML = '<div class="alert alert-warning w-100">Неизвестный отдел</div>';
+                container.innerHTML = '<div class="alert alert-warning w-100">Неизвестная локация</div>';
                 return;
             }
 
@@ -657,25 +733,25 @@
             }, 5000);
         }
 
-        // Обработчик для чекбокса "Использовать как отдел по умолчанию"
+        // Обработчик для чекбокса "Использовать как локацию по умолчанию"
         document.getElementById('save-as-default').addEventListener('change', function() {
-            const department = document.getElementById('department-select').value;
+            const location = document.getElementById('location-select').value;
             const saveAsDefault = this.checked;
 
-            if (saveAsDefault && !department) {
-                showFlashMessage('Пожалуйста, выберите отдел для сохранения', 'warning');
+            if (saveAsDefault && !location) {
+                showFlashMessage('Пожалуйста, выберите локацию для сохранения', 'warning');
                 this.checked = false;
                 return;
             }
 
             // Отправляем запрос на сервер
-            fetch('/save_default_department', {
+            fetch('/save_default_location', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    department: department,
+                    location: location,
                     save_as_default: saveAsDefault
                 })
             })
@@ -684,11 +760,11 @@
                 if (data.success) {
                     showFlashMessage(data.message, 'success');
 
-                    // Обновляем информацию о отделе по умолчанию на странице
+                    // Обновляем информацию о локации по умолчанию на странице
                     if (saveAsDefault) {
-                        // Добавляем или обновляем информацию о отделе по умолчанию
-                        let defaultDeptInfo = document.querySelector('.list-group-item:last-child .text-muted');
-                        if (!defaultDeptInfo) {
+                        // Добавляем или обновляем информацию о локации по умолчанию
+                        let defaultLocInfo = document.querySelector('.list-group-item:last-child .text-muted');
+                        if (!defaultLocInfo) {
                             // Создаем элемент, если его нет
                             const infoItem = document.createElement('li');
                             infoItem.className = 'list-group-item d-flex align-items-center';
@@ -697,21 +773,21 @@
                                     <i class="bi bi-star text-white"></i>
                                 </div>
                                 <div>
-                                    <strong>Отдел по умолчанию</strong>
+                                    <strong>Локация по умолчанию</strong>
                                     <div class="text-muted">
-                                        <span class="badge bg-success">${department}</span>
+                                        <span class="badge bg-success">${location}</span>
                                     </div>
                                 </div>
                             `;
                             document.querySelector('.list-group').appendChild(infoItem);
                         } else {
-                            defaultDeptInfo.innerHTML = `<span class="badge bg-success">${department}</span>`;
+                            defaultLocInfo.innerHTML = `<span class="badge bg-success">${location}</span>`;
                         }
                     } else {
-                        // Удаляем информацию о отделе по умолчанию
-                        const defaultDeptInfo = document.querySelector('.list-group-item:last-child .text-muted');
-                        if (defaultDeptInfo) {
-                            defaultDeptInfo.innerHTML = '<span class="text-muted">Не установлен</span>';
+                        // Удаляем информацию о локации по умолчанию
+                        const defaultLocInfo = document.querySelector('.list-group-item:last-child .text-muted');
+                        if (defaultLocInfo) {
+                            defaultLocInfo.innerHTML = '<span class="text-muted">Не установлена</span>';
                         }
                     }
                 } else {
@@ -721,42 +797,9 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showFlashMessage('Произошла ошибка при сохранении отдела', 'error');
+                showFlashMessage('Произошла ошибка при сохранении локации', 'error');
                 this.checked = !saveAsDefault; // Возвращаем предыдущее состояние
             });
-        });
-
-        // Обработчик изменения выбора отдела
-        document.getElementById('department-select').addEventListener('change', function() {
-            const department = this.value;
-            const saveAsDefaultCheckbox = document.getElementById('save-as-default');
-
-            // Если выбран отдел и чекбокс отмечен, обновляем отдел по умолчанию
-            if (department && saveAsDefaultCheckbox.checked) {
-                fetch('/save_default_department', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        department: department,
-                        save_as_default: true
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Обновляем информацию о отделе по умолчанию на странице
-                        const defaultDeptInfo = document.querySelector('.list-group-item:last-child .text-muted');
-                        if (defaultDeptInfo) {
-                            defaultDeptInfo.innerHTML = `<span class="badge bg-success">${department}</span>`;
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            }
         });
 
         // Инициализация после загрузки flatpickr
