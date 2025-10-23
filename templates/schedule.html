@@ -26,9 +26,12 @@
 
         <div class="me-3">
             <select class="form-select" id="location-filter" onchange="applyLocationFilter()" style="min-width: 150px;">
-                <option value="all" {% if location_filter == 'all' %}selected{% endif %}>Все локации</option>
+                <option value="all">Все локации</option>
                 {% for location in locations %}
-                    <option value="{{ location }}" {% if location_filter == location %}selected{% endif %}>{{ location }}</option>
+                    <option value="{{ location }}"
+                        {% if location_filter == location %}selected{% endif %}>
+                        {{ location }}
+                    </option>
                 {% endfor %}
             </select>
         </div>
@@ -73,11 +76,12 @@
                     <tbody>
                         {% for location in locations %}
                             {% if location_filter == 'all' or location_filter == location %}
-                                {% set max_places = location_places[location] %}
-                                {% for place in range(1, max_places + 1) %}
+                                {% set places_list = location_places_list[location] %}
+                                {% for place in places_list %}
                                     <tr>
-                                        <td class="fw-bold">{{ location }} - Место {{ place }}</td>
+                                        <td class="fw-bold">{{ location }} - {{ place }}</td>
                                         {% for hour in range(working_hours[0], working_hours[1]) %}
+                                            {% set next_hour = hour + 1 %}
                                             {% set hour_start = "%02d:00"|format(hour) %}
                                             {% set hour_end = "%02d:00"|format(hour + 1) %}
                                             {% set is_occupied = false %}
@@ -85,7 +89,7 @@
                                             {% set booking_info = '' %}
 
                                             {% set date_str = selected_date.isoformat() %}
-                                            {% set place_key = location + " - " + place|string %}
+                                            {% set place_key = location + " - " + place %}
                                             {% if schedule[date_str] and schedule[date_str][place_key] %}
                                                 {% set booking = schedule[date_str][place_key] %}
                                                 {% set booking_start = booking.start %}
@@ -142,13 +146,13 @@
                     <tbody>
                         {% for location in locations %}
                             {% if location_filter == 'all' or location_filter == location %}
-                                {% set max_places = location_places[location] %}
-                                {% for place in range(1, max_places + 1) %}
+                                {% set places_list = location_places_list[location] %}
+                                {% for place in places_list %}
                                     <tr>
-                                        <td class="fw-bold">{{ location }} - Место {{ place }}</td>
+                                        <td class="fw-bold">{{ location }} - {{ place }}</td>
                                         {% for day in week_days %}
                                             {% set day_str = day.date.isoformat() %}
-                                            {% set place_key = location + " - " + place|string %}
+                                            {% set place_key = location + " - " + place %}
                                             {% set is_occupied = day.schedule[place_key] is defined %}
                                             {% set booking_user = '' %}
                                             {% set booking_time = '' %}
@@ -206,7 +210,7 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+        });
     });
 
     // Функция для применения фильтра по локации

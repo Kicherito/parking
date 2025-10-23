@@ -139,6 +139,9 @@
                                         <div class="form-text">Окончание бронирования</div>
                                     </div>
                                 </div>
+                                <div id="time-validation-error" class="text-danger small mt-2" style="display: none;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Время начала не может быть больше времени окончания
+                                </div>
                             </div>
 
                             <div class="mb-4">
@@ -397,12 +400,9 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Динамическое определение максимального количества мест для локаций
-        const locationMaxPlaces = {{ location_places | tojson }};
-
-        // Универсальная функция для получения максимального количества мест
-        function getMaxPlacesForLocation(location) {
-            return locationMaxPlaces[location] || 10;
+        // Функция для преобразования строки в число для сортировки
+        function parsePlaceNumber(number) {
+            return parseFloat(number);
         }
 
         // Флаг для отслеживания инициализации
@@ -419,6 +419,56 @@
         function getDateTimestamp(date) {
             return normalizeDate(date).getTime();
         }
+
+        // Функция для проверки валидности времени
+        function validateTime() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const validationError = document.getElementById('time-validation-error');
+
+            if (startTime && endTime && startTime >= endTime) {
+                validationError.style.display = 'block';
+                return false;
+            } else {
+                validationError.style.display = 'none';
+                return true;
+            }
+        }
+
+        // Функция для показа ошибки времени с фокусировкой
+        function showTimeError() {
+            const startTimeInput = document.getElementById('start-time');
+            const validationError = document.getElementById('time-validation-error');
+
+            validationError.style.display = 'block';
+            startTimeInput.focus();
+            startTimeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Показываем всплывающее сообщение
+            showFlashMessage('Время начала не может быть больше времени окончания', 'error');
+        }
+
+        // Функция для сброса выбранного места
+        function resetSelectedPlace() {
+            // Сбрасываем выделение
+            document.querySelectorAll('.place-available').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // Очищаем hidden input
+            document.getElementById('selected-place-id').value = '';
+
+            // Деактивируем кнопку бронирования
+            document.getElementById('book-button').disabled = true;
+        }
+
+        // Инициализация валидации времени
+        document.getElementById('start-time').addEventListener('change', function() {
+            validateTime();
+        });
+        document.getElementById('end-time').addEventListener('change', function() {
+            validateTime();
+        });
 
         // Функция для добавления дней недели
         function addWeekdays(dayOfWeek) {
@@ -479,6 +529,20 @@
             // Обновляем отображение выбранных дат
             if (window.updateSelectedDates) {
                 window.updateSelectedDates(uniqueDates);
+            }
+
+            // Сбрасываем выбранное место при изменении дат
+            resetSelectedPlace();
+
+            // Автоматически обновляем доступные места, если они уже отображаются
+            autoUpdateAvailablePlaces();
+        }
+
+        // Функция для автоматического обновления доступных мест
+        function autoUpdateAvailablePlaces() {
+            const availablePlacesContainer = document.getElementById('available-places-container');
+            if (availablePlacesContainer.style.display !== 'none') {
+                checkAvailability();
             }
         }
 
@@ -557,6 +621,12 @@
                 if (window.updateSelectedDates) {
                     window.updateSelectedDates(uniqueDates);
                 }
+
+                // Сбрасываем выбранное место
+                resetSelectedPlace();
+
+                // Автоматически обновляем доступные места
+                autoUpdateAvailablePlaces();
             });
 
             // Кнопка очистки
@@ -566,7 +636,20 @@
                     if (window.updateSelectedDates) {
                         window.updateSelectedDates([]);
                     }
+                    // Сбрасываем выбранное место
+                    resetSelectedPlace();
+                    // Автоматически обновляем доступные места
+                    autoUpdateAvailablePlaces();
                 }
+            });
+
+            // Сбрасываем чекбокс при изменении локации
+            document.getElementById('location-select').addEventListener('change', function() {
+                document.getElementById('save-as-default').checked = false;
+                // Сбрасываем выбранное место
+                resetSelectedPlace();
+                // Автоматически обновляем доступные места, если они уже отображаются
+                autoUpdateAvailablePlaces();
             });
 
             isInitialized = true;
@@ -574,23 +657,29 @@
 
         // Функция для проверки доступности мест
         function checkAvailability() {
+            // Проверяем валидность времени перед проверкой доступности
+            if (!validateTime()) {
+                showTimeError();
+                return;
+            }
+
             const location = document.getElementById('location-select').value;
             const selectedDates = window.fp ? window.fp.selectedDates : [];
             const startTime = document.getElementById('start-time').value;
             const endTime = document.getElementById('end-time').value;
 
             if (!location) {
-                alert('Пожалуйста, выберите локацию');
+                showFlashMessage('Пожалуйста, выберите локацию', 'error');
                 return;
             }
 
             if (selectedDates.length === 0) {
-                alert('Пожалуйста, выберите хотя бы одну дату');
+                showFlashMessage('Пожалуйста, выберите хотя бы одну дату', 'error');
                 return;
             }
 
             if (!startTime || !endTime) {
-                alert('Пожалуйста, укажите время бронирования');
+                showFlashMessage('Пожалуйста, укажите время бронирования', 'error');
                 return;
             }
 
@@ -633,7 +722,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    alert('Ошибка: ' + data.error);
+                    showFlashMessage('Ошибка: ' + data.error, 'error');
                     return;
                 }
 
@@ -641,7 +730,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Произошла ошибка при проверке доступности мест');
+                showFlashMessage('Произошла ошибка при проверке доступности мест', 'error');
             });
         }
 
@@ -650,32 +739,24 @@
             const container = document.getElementById('available-places');
             container.innerHTML = '';
 
-            // Получаем выбранную локацию
-            const locationSelect = document.getElementById('location-select');
-            const selectedLocation = locationSelect.options[locationSelect.selectedIndex].text;
-            const maxPlaces = getMaxPlacesForLocation(selectedLocation);
-
-            if (!maxPlaces) {
-                container.innerHTML = '<div class="alert alert-warning w-100">Неизвестная локация</div>';
+            if (places.length === 0) {
+                container.innerHTML = '<div class="alert alert-warning w-100">Нет доступных мест на выбранные даты</div>';
                 return;
             }
 
-            // Сортируем места по номеру
-            places.sort((a, b) => a.number - b.number);
+            // Сортируем места по номеру (преобразуя строки в числа для правильной сортировки)
+            places.sort((a, b) => parsePlaceNumber(a.number) - parsePlaceNumber(b.number));
 
-            // Создаем элементы для всех мест
-            for (let i = 1; i <= maxPlaces; i++) {
-                const placeInfo = places.find(p => p.number === i);
-                const isAvailable = placeInfo ? placeInfo.available : false;
-
+            // Создаем элементы для каждого места из ответа сервера
+            places.forEach(placeInfo => {
                 const placeElement = document.createElement('div');
-                placeElement.className = `place ${isAvailable ? 'place-available' : 'place-unavailable'}`;
-                placeElement.textContent = i;
+                placeElement.className = `place ${placeInfo.available ? 'place-available' : 'place-unavailable'}`;
+                placeElement.textContent = placeInfo.number;
 
-                if (isAvailable) {
+                if (placeInfo.available) {
                     placeElement.dataset.placeId = placeInfo.id;
                     placeElement.addEventListener('click', function() {
-                        selectPlace(placeInfo.id, i);
+                        selectPlace(placeInfo.id, placeInfo.number);
                     });
                     placeElement.title = 'Нажмите, чтобы выбрать это место';
                 } else {
@@ -683,7 +764,7 @@
                 }
 
                 container.appendChild(placeElement);
-            }
+            });
         }
 
         // Функция выбора места
@@ -717,19 +798,21 @@
             // Создаем элемент уведомления
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
             alertDiv.innerHTML = `
                 <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
                 ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
 
-            // Добавляем в контейнер для уведомлений
-            const flashContainer = document.querySelector('.alert-flash');
-            flashContainer.appendChild(alertDiv);
+            // Добавляем в body
+            document.body.appendChild(alertDiv);
 
             // Автоматически закрываем через 5 секунд
             setTimeout(() => {
-                alertDiv.remove();
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
             }, 5000);
         }
 
@@ -759,37 +842,6 @@
             .then(data => {
                 if (data.success) {
                     showFlashMessage(data.message, 'success');
-
-                    // Обновляем информацию о локации по умолчанию на странице
-                    if (saveAsDefault) {
-                        // Добавляем или обновляем информацию о локации по умолчанию
-                        let defaultLocInfo = document.querySelector('.list-group-item:last-child .text-muted');
-                        if (!defaultLocInfo) {
-                            // Создаем элемент, если его нет
-                            const infoItem = document.createElement('li');
-                            infoItem.className = 'list-group-item d-flex align-items-center';
-                            infoItem.innerHTML = `
-                                <div class="bg-primary rounded p-2 me-3">
-                                    <i class="bi bi-star text-white"></i>
-                                </div>
-                                <div>
-                                    <strong>Локация по умолчанию</strong>
-                                    <div class="text-muted">
-                                        <span class="badge bg-success">${location}</span>
-                                    </div>
-                                </div>
-                            `;
-                            document.querySelector('.list-group').appendChild(infoItem);
-                        } else {
-                            defaultLocInfo.innerHTML = `<span class="badge bg-success">${location}</span>`;
-                        }
-                    } else {
-                        // Удаляем информацию о локации по умолчанию
-                        const defaultLocInfo = document.querySelector('.list-group-item:last-child .text-muted');
-                        if (defaultLocInfo) {
-                            defaultLocInfo.innerHTML = '<span class="text-muted">Не установлена</span>';
-                        }
-                    }
                 } else {
                     showFlashMessage(data.error, 'error');
                     this.checked = !saveAsDefault; // Возвращаем предыдущее состояние
@@ -802,9 +854,44 @@
             });
         });
 
+        // Обработчик отправки формы бронирования
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            // Проверяем валидность времени перед отправкой
+            if (!validateTime()) {
+                e.preventDefault();
+                showTimeError();
+                return;
+            }
+
+            // Проверяем, что место выбрано
+            const selectedPlaceId = document.getElementById('selected-place-id').value;
+            if (!selectedPlaceId) {
+                e.preventDefault();
+                showFlashMessage('Пожалуйста, выберите место для бронирования', 'error');
+                return;
+            }
+
+            // Проверяем, что есть выбранные даты
+            const selectedDates = window.fp ? window.fp.selectedDates : [];
+            if (selectedDates.length === 0) {
+                e.preventDefault();
+                showFlashMessage('Пожалуйста, выберите хотя бы одну дату', 'error');
+                return;
+            }
+        });
+
         // Инициализация после загрузки flatpickr
         function initAfterFlatpickr() {
             if (window.fp && typeof window.updateSelectedDates === 'function') {
+                // Переопределяем функцию updateSelectedDates для автоматического обновления и сброса выбранного места
+                const originalUpdateSelectedDates = window.updateSelectedDates;
+                window.updateSelectedDates = function(selectedDates) {
+                    originalUpdateSelectedDates(selectedDates);
+                    // Сбрасываем выбранное место при изменении дат
+                    resetSelectedPlace();
+                    autoUpdateAvailablePlaces();
+                };
+
                 initializeEventHandlers();
             } else {
                 // Если flatpickr еще не загрузился, ждем
@@ -817,6 +904,9 @@
 
         // Назначаем обработчик на кнопку проверки доступности
         document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
+
+        // Инициализируем валидацию времени при загрузке
+        validateTime();
     });
 </script>
 {% endblock %}
