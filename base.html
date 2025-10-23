@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Place - система бронирования рабочих мест</title>
+    <!-- Plotly для графиков -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #564FD8;
+            --secondary: #FF64BC;
+            --accent: #36D1DC;
+            --success: #4CC9F0;
+            --warning: #FFB74D;
+            --danger: #FF5252;
+            --light: #F8F9FA;
+            --dark: #1A1D21;
+            --gray: #6C757D;
+            --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--secondary) 0%, #FF9CDA 100%);
+            --gradient-accent: linear-gradient(135deg, var(--accent) 0%, #5B86E5 100%);
+            --gradient-success: linear-gradient(135deg, var(--success) 0%, #2EC4B6 100%);
+            --gradient-warning: linear-gradient(135deg, var(--warning) 0%, #FF9F1C 100%);
+            --gradient-danger: linear-gradient(135deg, var(--danger) 0%, #E71D36 100%);
+            --gradient-bg: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+            --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.8) 100%);
+            --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 15px 40px rgba(0, 0, 0, 0.15);
+            --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.2);
+            --border-radius: 16px;
+            --border-radius-lg: 24px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --transition-slow: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--gradient-bg);
+            min-height: 100vh;
+            padding-top: 20px;
+            padding-bottom: 50px;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6, .display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Навбар с стеклянным эффектом */
+        .navbar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .navbar:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.8rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .navbar-brand:hover {
+            transform: scale(1.02);
+        }
+
+        .navbar-brand span {
+            color: var(--primary-dark);
+            position: relative;
+        }
+
+        .navbar-brand span::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        /* Карточки с стеклянным эффектом */
+        .card {
+            background: var(--gradient-card);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: none;
+            transition: var(--transition);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+            padding: 20px 25px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            border: none;
+        }
+
+        /* Кнопки с анимацией */
+        .btn {
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: var(--transition-slow);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(108, 99, 255, 0.4);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(76, 201, 240, 0.4);
+        }
+
+        /* Герой секция */
+        .hero-section {
+            background: var(--gradient-primary);
+            border-radius: var(--border-radius);
+            padding: 60px 40px;
+            color: white;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 20%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-section::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-secondary);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 32px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        .feature-icon:hover {
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        /* Статистические карточки */
+        .stat-card {
+            text-align: center;
+            padding: 30px 25px;
+            border-radius: var(--border-radius);
+            background: var(--gradient-card);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            height: 100%;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-number {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 5px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* Формы */
+        .form-control, .form-select {
+            border-radius: 12px;
+            padding: 14px 18px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(108, 99, 255, 0.15);
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .input-group-text {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 12px 0 0 12px;
+        }
+
+        /* Карточки бронирований */
+        .booking-card {
+            background: var(--gradient-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .booking-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Футер */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--gray);
+            margin-top: 50px;
+            font-size: 0.9rem;
+        }
+
+        /* Стили для мест */
+        .place {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid;
+            border-radius: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 6px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            font-size: 1.1rem;
+        }
+
+        .place-available {
+            border-color: var(--success);
+            background: rgba(76, 201, 240, 0.1);
+            color: #0a5c55;
+            box-shadow: 0 4px 10px rgba(46, 196, 182, 0.1);
+        }
+
+        .place-available:hover {
+            background: rgba(76, 201, 240, 0.2);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(46, 196, 182, 0.2);
+        }
+
+        .place-available.selected {
+            background: var(--gradient-success);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 10px 25px rgba(46, 196, 182, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 196, 182, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 196, 182, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 196, 182, 0); }
+        }
+
+        .place-unavailable {
+            border-color: var(--danger);
+            background: rgba(255, 82, 82, 0.1);
+            color: #8a1423;
+            cursor: not-allowed;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(231, 29, 54, 0.1);
+        }
+
+        .place-unavailable::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--danger);
+            transform: rotate(-45deg);
+        }
+
+        .place-unavailable::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--danger);
+            transform: rotate(45deg);
+        }
+
+        /* Анимации */
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease;
+        }
+
+        .animate-bounce-in {
+            animation: bounceIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Стили для плоского календаря */
+        .flatpickr-calendar {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            border: none;
+            overflow: hidden;
+        }
+
+        .flatpickr-day.selected {
+            background: var(--gradient-primary);
+            border-color: var(--primary);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 40px 25px;
+            }
+
+            .stat-number {
+                font-size: 2.2rem;
+            }
+
+            .navbar-brand {
+                font-size: 1.5rem;
+            }
+
+            .place {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Специфические стили для статусов */
+        .status-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 12px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .status-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+        }
+
+        .status-available {
+            background-color: rgba(46, 196, 182, 0.2);
+            border: 2px solid var(--success);
+        }
+
+        .status-unavailable {
+            background-color: rgba(231, 29, 54, 0.2);
+            border: 2px solid var(--danger);
+            position: relative;
+        }
+
+        .status-unavailable::after,
+        .status-unavailable::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--danger);
+        }
+
+        .status-unavailable::after {
+            transform: rotate(45deg);
+        }
+
+        .status-unavailable::before {
+            transform: rotate(-45deg);
+        }
+
+        /* Стили для уведомлений */
+        .alert-flash {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            min-width: 300px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            border: none;
+            animation: slideInRight 0.5s ease, fadeOut 0.5s ease 4.5s forwards;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+
+        /* Стили для таблицы расписания */
+        .table th {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 15px;
+        }
+
+        .table td {
+            vertical-align: middle;
+            position: relative;
+            min-width: 80px;
+            height: 40px;
+            padding: 12px;
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .bg-success {
+            background: var(--gradient-success) !important;
+        }
+
+        .bg-danger {
+            background: var(--gradient-warning) !important;
+        }
+
+        /* Декоративные элементы */
+        .decoration {
+            position: absolute;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .decoration-circle {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            opacity: 0.05;
+            filter: blur(20px);
+        }
+
+        .decoration-blob {
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            opacity: 0.03;
+            filter: blur(30px);
+        }
+
+        /* Улучшенные стили для кнопок дней недели */
+        .weekdays-selector .btn-day {
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            min-width: 46px;
+        }
+
+        /* Убедимся, что кнопка "Отменить" не переносится */
+        .booking-card .btn {
+            white-space: nowrap;
+        }
+
+        /* Стили для отображения времени брони */
+        .booking-time {
+            font-size: 0.9rem;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        .booking-time i {
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Декоративные элементы -->
+    <div class="decoration" style="top: 5%; left: -150px;">
+        <div class="decoration-circle"></div>
+    </div>
+    <div class="decoration" style="bottom: 10%; right: -250px;">
+        <div class="decoration-blob"></div>
+    </div>
+
+    <div class="alert-flash">
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i>
+                <div>{{ message|safe }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <nav class="navbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-building me-2"></i>
+            Pixel<span>Place</span>
+        </a>
+        <div class="d-flex">
+            {% if 'username' in session %}
+                <a href="{{ url_for('analytics_dashboard') }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-graph-up me-1"></i> Аналитика
+                </a>
+                <a href="{{ url_for('schedule') }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-calendar-event me-1"></i> Расписание
+                </a>
+                <div class="dropdown me-3">
+                    <a class="btn btn-outline-primary" href="{{ url_for('profile') }}" role="button">
+                        <i class="bi bi-person-circle me-1"></i> {{ session['username'] }}
+                    </a>
+                </div>
+                <form action="{{ url_for('logout') }}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right me-1"></i> Выйти
+                    </button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-box-arrow-in-right"></i> Войти
+                </a>
+                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Регистрация
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+    <div class="container-fluid">
+        {% block content %}{% endblock %}
+
+        <div class="footer">
+            <p>© 2025 Pixel Place - система бронирования рабочих мест. Все права защищены.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Инициализация AOS
+        AOS.init({
+            duration: 800,
+            easing: 'ease-out-quad',
+            once: true
+        });
+
+        // Базовая инициализация времени без ограничений
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeInputs = document.querySelectorAll('input[type="time"]');
+            timeInputs.forEach(input => {
+                // Убираем ограничения на шаг, чтобы можно было выбирать любые минуты
+                input.step = 60; // 1 минута - минимальный шаг
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация flatpickr
+            flatpickr.localize(flatpickr.l10ns.ru);
+
+            // Функция для форматирования даты в локальном формате
+            window.formatDate = function(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Инициализация календаря для выбора дат
+            const datePicker = document.getElementById('date-picker');
+            if (datePicker) {
+                const today = new Date();
+                const maxDate = new Date();
+                maxDate.setDate(today.getDate() + 30);
+
+                window.fp = flatpickr(datePicker, {
+                    mode: "multiple",
+                    dateFormat: "Y-m-d",
+                    minDate: "today",
+                    maxDate: maxDate,
+                    locale: "ru",
+                    inline: true,
+                    showMonths: 1,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        window.updateSelectedDates(selectedDates);
+                    }
+                });
+
+                // Функция для обновления отображения выбранных дат
+                window.updateSelectedDates = function(selectedDates) {
+                    const container = document.getElementById('selected-dates');
+                    container.innerHTML = '';
+
+                    selectedDates.sort((a, b) => a - b).forEach(date => {
+                        const dateStr = window.formatDate(date);
+                        const formattedDate = new Date(dateStr).toLocaleDateString('ru-RU', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short'
+                        });
+
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-primary date-badge me-2 mb-2 p-2';
+                        badge.innerHTML = `<i class="bi bi-calendar me-1"></i> ${formattedDate}`;
+                        container.appendChild(badge);
+                    });
+
+                    // Обновляем скрытое поле с датами
+                    document.getElementById('hidden-dates').value = selectedDates.map(d => window.formatDate(d)).join(',');
+                }
+
+                // Функция для добавления дней недели
+                function addWeekdays(dayOfWeek) {
+                    const selectedDates = window.fp.selectedDates || [];
+                    const selectedDateSet = new Set(selectedDates.map(d => d.getTime()));
+
+                    const today = new Date();
+                    const endDate = new Date();
+                    endDate.setDate(today.getDate() + 30);
+                    const currentDate = new Date(today);
+
+                    const datesToAdd = [];
+
+                    while (currentDate <= endDate) {
+                        if (currentDate.getDay() === dayOfWeek) {
+                            if (!selectedDateSet.has(currentDate.getTime())) {
+                                datesToAdd.push(new Date(currentDate));
+                                selectedDateSet.add(currentDate.getTime());
+                            }
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    // Добавляем новые даты
+                    const newSelectedDates = [...selectedDates, ...datesToAdd];
+                    window.fp.setDate(newSelectedDates);
+
+                    // Обновляем отображение
+                    window.updateSelectedDates(newSelectedDates);
+                }
+
+                // Добавление кнопок для выбора дней недели
+                document.querySelectorAll('.day-selector').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const dayOfWeek = parseInt(this.dataset.day);
+                        addWeekdays(dayOfWeek);
+                    });
+                });
+
+                // Кнопка выбора всех рабочих дней
+                document.getElementById('select-workdays').addEventListener('click', function() {
+                    const selectedDates = window.fp.selectedDates || [];
+                    const selectedDateSet = new Set(selectedDates.map(d => d.getTime()));
+
+                    const today = new Date();
+                    const endDate = new Date();
+                    endDate.setDate(today.getDate() + 30);
+                    const currentDate = new Date(today);
+
+                    const datesToAdd = [];
+
+                    while (currentDate <= endDate) {
+                        // 1-5: понедельник-пятница
+                        if (currentDate.getDay() >= 1 && currentDate.getDay() <= 5) {
+                            if (!selectedDateSet.has(currentDate.getTime())) {
+                                datesToAdd.push(new Date(currentDate));
+                                selectedDateSet.add(currentDate.getTime());
+                            }
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    // Добавляем новые даты
+                    const newSelectedDates = [...selectedDates, ...datesToAdd];
+                    window.fp.setDate(newSelectedDates);
+
+                    // Обновляем отображение
+                    window.updateSelectedDates(newSelectedDates);
+                });
+
+                // Кнопка очистки
+                document.getElementById('clear-dates').addEventListener('click', function() {
+                    window.fp.clear();
+                    // Обновляем отображение
+                    window.updateSelectedDates([]);
+                });
+
+                // Инициализация текущих дат
+                window.updateSelectedDates(window.fp.selectedDates);
+            }
+
+            // Автоматическое обновление даты окончания
+            const startDateInput = document.querySelector('input[name="start_date"]');
+            const endDateInput = document.querySelector('input[name="end_date"]');
+
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function() {
+                    if (endDateInput.value && new Date(endDateInput.value) < new Date(this.value)) {
+                        endDateInput.value = this.value;
+                    }
+                });
+            }
+
+            // Инициализация подсказок Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
+</body>
+</html>

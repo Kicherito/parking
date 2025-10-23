@@ -8,12 +8,12 @@ import plotly.utils
 import json
 from io import BytesIO
 
-app = Flask(__name__, template_folder='/root/parking/templates')
+app = Flask(__name__)
 app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Конфигурация PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet12@localhost/office_booking_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet!2@localhost/office_booking_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -33,7 +33,7 @@ class User(db.Model):
 class Workplace(db.Model):
     __tablename__ = 'workplaces'
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.Integer, nullable=False)
+    number = db.Column(db.String(10), nullable=False)  # String для дробных чисел
     location = db.Column(db.String(100), nullable=False)
     bookings = db.relationship('Booking', backref='workplace', lazy=True)
 
@@ -188,6 +188,10 @@ class OfficeBookingSystem:
         if not user_obj:
             return [("error", "Пользователь не найден")]
 
+        # ПРОВЕРКА: Время начала должно быть меньше времени окончания
+        if start_time >= end_time:
+            return [("error", "Время начала бронирования должно быть раньше времени окончания")]
+
         for date_str in dates:
             try:
                 start_dt = datetime.fromisoformat(f"{date_str}T{start_time}")
@@ -250,7 +254,7 @@ class OfficeBookingSystem:
         ).all()
 
         if not bookings:
-            return "Нет активных бронирований для отмены"
+            return "Нет активных бронирования для отмены"
 
         # Удаляем все бронирования
         for booking in bookings:
@@ -343,7 +347,10 @@ class OfficeBookingSystem:
         available_places = []
 
         # Получаем все места в локации
-        workplaces = Workplace.query.filter_by(location=location).order_by(Workplace.number).all()
+        workplaces = Workplace.query.filter_by(location=location).all()
+
+        # Сортируем места, преобразуя строки в числа для правильной сортировки
+        workplaces.sort(key=lambda x: float(x.number))
 
         for workplace in workplaces:
             is_available_for_all_dates = True
@@ -578,13 +585,19 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        if not all(key in request.form for key in ['username', 'password', 'confirm_password']):
+        if not all(key in request.form for key in ['username', 'password', 'confirm_password', 'codeword']):
             flash('Все поля обязательны для заполнения', 'error')
             return render_template('register.html')
 
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        codeword = request.form['codeword']  # Получаем кодовое слово
+
+        # Проверяем кодовое слово (без учета регистра)
+        if codeword.strip().lower() != "парковка":
+            flash('Неверное кодовое слово', 'error')
+            return render_template('register.html')
 
         if password != confirm_password:
             flash('Пароли не совпадают', 'error')
@@ -690,8 +703,7 @@ def cancel_all_bookings():
         return jsonify({'error': 'Not authenticated'}), 401
 
     result = booking_system.cancel_all_bookings(session['username'])
-    flash(result, 'success' if 'успешно'in
-    result else 'error')
+    flash(result, 'success' if 'успешно' in result else 'error')
     return redirect(url_for('dashboard'))
 
 
@@ -708,7 +720,8 @@ def cancel_bookings_in_range():
         return redirect(url_for('dashboard'))
 
     result = booking_system.cancel_bookings_in_range(session['username'], start_date, end_date)
-    flash(result, 'success' if 'успешно' in result else 'error')
+    # ИСПРАВЛЕНИЕ: Всегда показываем успех зеленым цветом при удалении в диапазоне
+    flash(result, 'success')
     return redirect(url_for('dashboard'))
 
 
@@ -716,7 +729,17 @@ def cancel_bookings_in_range():
 def schedule():
     selected_date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
     view_type = request.args.get('view', 'week')
-    location_filter = request.args.get('location', 'all')
+
+    # ИСПРАВЛЕНИЕ: Получаем локацию из параметров или используем локацию по умолчанию пользователя
+    location_filter = request.args.get('location', '')
+
+    # Если локация не указана в параметрах, используем локацию по умолчанию пользователя
+    if not location_filter:
+        user_obj = User.query.filter_by(username=session['username']).first()
+        if user_obj and user_obj.has_default_location:
+            location_filter = user_obj.default_location
+        else:
+            location_filter = 'all'
 
     try:
         selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
@@ -769,6 +792,25 @@ def schedule():
     locations = booking_system.get_locations()
     location_places = booking_system.get_location_places_count()
 
+    # Создаем список реальных номеров мест для каждой локации
+    location_places_list = {}
+    for location in locations:
+        # Получаем реальные рабочие места из базы данных
+        workplaces = Workplace.query.filter_by(location=location).all()
+        # Извлекаем номера мест (строки) и сортируем их
+        place_numbers = [wp.number for wp in workplaces]
+        # Сортируем как числа, если это возможно, иначе как строки
+        try:
+            place_numbers.sort(key=lambda x: float(x))
+        except ValueError:
+            place_numbers.sort()
+        location_places_list[location] = place_numbers
+
+    # Получаем информацию о пользователе
+    user_obj = User.query.filter_by(username=session['username']).first()
+    has_default_location = user_obj.has_default_location if user_obj else False
+    default_location = user_obj.default_location if user_obj else None
+
     return render_template('schedule.html',
                            schedule=schedule_data,
                            selected_date=selected_date,
@@ -781,8 +823,11 @@ def schedule():
                            min_date=datetime.now().strftime('%Y-%m-%d'),
                            max_date=(datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
                            locations=locations,
-                           location_filter=location_filter,
-                           location_places=location_places)
+                           location_filter=location_filter,  # Передаем выбранную локацию
+                           location_places=location_places,
+                           location_places_list=location_places_list,
+                           has_default_location=has_default_location,
+                           default_location=default_location)
 
 
 @app.route('/save_default_location', methods=['POST'])
@@ -890,13 +935,17 @@ def analytics_dashboard():
 
     start_date = request.args.get('start_date', default_start.strftime('%Y-%m-%d'))
     end_date = request.args.get('end_date', default_end.strftime('%Y-%m-%d'))
+
+    # ИСПРАВЛЕНИЕ: Получаем локацию из параметров или используем локацию по умолчанию пользователя
     location_filter = request.args.get('location', '')
 
-    # Если пользователь явно выбрал "Все локации" (пустая строка), не используем локацию по умолчанию
-    if location_filter == '':
-        pass
-    elif not location_filter and session.get('default_location'):
-        location_filter = session['default_location']
+    # Если локация не указана в параметрах, используем локацию по умолчанию пользователя
+    if not location_filter:
+        user_obj = User.query.filter_by(username=session['username']).first()
+        if user_obj and user_obj.has_default_location:
+            location_filter = user_obj.default_location
+        else:
+            location_filter = ''
 
     # Преобразуем даты в datetime объекты для корректного расчета
     start_dt = datetime.strptime(start_date, '%Y-%m-%d') if start_date else default_start
@@ -930,7 +979,7 @@ def analytics_dashboard():
 
     time_stats = get_time_statistics(bookings_with_filter)
 
-    # Получаем информацию о пользователе для чекбокса
+    # Получаем информацию о пользователе
     user_obj = User.query.filter_by(username=session['username']).first()
     has_default_location = user_obj.has_default_location if user_obj else False
     default_location = user_obj.default_location if user_obj else None
@@ -945,7 +994,7 @@ def analytics_dashboard():
                            start_dt=start_dt_date,  # Передаем как date объект
                            end_dt=end_dt_date,  # Передаем как date объект
                            locations=locations,
-                           location_filter=location_filter,
+                           location_filter=location_filter,  # Передаем выбранную локацию
                            occupancy_percentage=occupancy_percentage,
                            total_bookings=len(bookings_with_filter),
                            total_bookings_all=len(bookings_all_locations),
@@ -1045,6 +1094,4 @@ def utility_processor():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
     app.run(host='0.0.0.0', port=5000, debug=True)
-
