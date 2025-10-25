@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <i class="bi bi-person-plus me-2"></i>Регистрация
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Логин</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Придумайте логин" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Придумайте пароль" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Подтверждение пароля</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Повторите пароль" required>
+                        </div>
+                    </div>
+
+                    <!-- Новое поле для кодового слова -->
+                    <div class="mb-4">
+                        <label for="codeword" class="form-label">Кодовое слово</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text" class="form-control" id="codeword" name="codeword" placeholder="Введите кодовое слово" required>
+                        </div>
+                        <div class="form-text">Для завершения регистрации необходимо знать кодовое слово</div>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-0">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -8,12 +8,12 @@ import plotly.utils
 import json
 from io import BytesIO
 
-app = Flask(__name__, template_folder='/root/parking/templates')
+app = Flask(__name__,static_folder='static')
 app.secret_key = 'super_secret_key_12345'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Конфигурация PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet12@localhost/office_booking_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Valet!2@localhost/office_booking_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -1094,5 +1094,4 @@ def utility_processor():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
     app.run(host='0.0.0.0', port=5000, debug=True)
